@@ -1,6 +1,7 @@
 import argparse
 import random
 import math
+import os
 
 from tqdm import tqdm
 import numpy as np
@@ -104,7 +105,7 @@ def train(args, dataset, generator, discriminator):
                     'g_optimizer': g_optimizer.state_dict(),
                     'd_optimizer': d_optimizer.state_dict(),
                 },
-                f'checkpoint/train_step-{step}.model',
+                f'{args.checkpoint_dir}/train_step-{step}.model',
             )
 
             adjust_lr(g_optimizer, args.lr.get(resolution, 0.001))
@@ -227,7 +228,7 @@ def train(args, dataset, generator, discriminator):
 
             utils.save_image(
                 torch.cat(images, 0),
-                f'sample/{str(i + 1).zfill(6)}.png',
+                f'{args.sample_dir}/{str(i + 1).zfill(6)}.png',
                 nrow=gen_i,
                 normalize=True,
                 range=(-1, 1),
@@ -235,7 +236,7 @@ def train(args, dataset, generator, discriminator):
 
         if (i + 1) % 10000 == 0:
             torch.save(
-                g_running.state_dict(), f'checkpoint/{str(i + 1).zfill(6)}.model'
+                g_running.state_dict(), f'{args.checkpoint_dir}/{str(i + 1).zfill(6)}.model'
             )
 
         state_msg = (
@@ -285,6 +286,13 @@ if __name__ == '__main__':
         choices=['folder', 'lsun'],
         help=('Specify dataset. ' 'Currently Image Folder and LSUN is supported'),
     )
+    parser.add_argument(
+        '-o',
+        '--out',
+        default='out/',
+        type=str,
+        help='Output destination folder'
+    )
 
     args = parser.parse_args()
 
@@ -322,6 +330,13 @@ if __name__ == '__main__':
     else:
         args.lr = {}
         args.batch = {}
+
+    args.checkpoint_dir = os.path.join(args.out, 'checkpoint')
+    args.sample_dir = os.path.join(args.out, 'sample')
+    if not os.path.exists(args.checkpoint_dir):
+        os.makedirs(args.checkpoint_dir)
+    if not os.path.exists(args.sample_dir):
+        os.makedirs(args.sample_dir)
 
     args.gen_sample = {512: (8, 4), 1024: (4, 2)}
 
